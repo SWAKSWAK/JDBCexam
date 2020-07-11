@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -213,14 +214,15 @@ public class StudentDAO {
 
 	// 학생번호 자동생성 메소드 (등록년도(sysdate)+학과번호+0001) 부터 시작해 일치하는 값이 나오면 ++ 한다.
 	public String studentNum(String s_num) {
+		// ArrayList 에 임시로 학번을 담는다
+		ArrayList<String> al = new ArrayList<String>();
 
 		// 값을 추가할수 있기 때문에 StringBuffer
 		StringBuffer sql = new StringBuffer();
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yy");
 		String year = sdf.format(new java.util.Date());
-		sql.append("select rpad(substr(sd_num,1,2)||s_num, 8, '0001') as studentNum ");
-		sql.append("from student where substr(sd_num,1,2)=" + year + " and s_num= " + s_num);
+		sql.append("select sd_num from student where substr(sd_num,1,2)=" + year + " and s_num= " + s_num);
 
 		// try문 안에서 하면 try 문에서만 쓸수 있기 때문에 try문 밖에서 선언
 		Connection con = null;
@@ -236,29 +238,23 @@ public class StudentDAO {
 			stmt = con.createStatement();
 			// StringBuffer 로 만든 sql 문을 stmt 쿼리문 전송 메소드에 보낸다.
 			rs = stmt.executeQuery(sql.toString());
-			if (!rs.next()) {// 등록년도(sysdate)+학과번호 로 검색했을때 일치하는 값이 나오지 않으면(if) 바로 +0001
-				System.out.println("if");
-				studentNumber = year + s_num + "0001";
-				System.out.println(studentNumber);
-			} else {// 일치하는 값이 나오면 (else) 를 통해 while(rs.next())가 false 가 될때 까지 ++한다.
-				System.out.println("else");
-				studentNumber = rs.getString("studentNum");// varchar2 로 되어 있으므로 String 으로 받아
-				int stn = Integer.parseInt(studentNumber);// int 로 형변환
-				stn++;// else에서 next 한번 했으므로 기본 ++
-				while (rs.next()) {// 다음값이 있는지?
-					System.out.println("while");
-					stn++;// 있다면 ++
+			studentNumber = year + s_num + "0001";
+			int stn = Integer.parseInt(studentNumber);// int 로 형변환
+			while (rs.next())
+				al.add(rs.getString("sd_num"));
+
+			Collections.sort(al);
+			for (int i = 0; i < al.size(); i++) {
+				if (al.get(i).equals(studentNumber)) {
+					stn++;
 				}
-				// while문 다 돌고 난 후, String타입에 정수형을 삽입할때 변수명만 입력하면 컴파일 에러가 난다.
-				// 뒤에 "" 를 붙여주면 숫자값+문자열 의 연결 연산자로 인식해 숫자를 담는다.
 				studentNumber = stn + "";
-				// int 앞자리가 0인 경우 int로 변환하면 사라짐
 				if (studentNumber.length() != 8) {
 					while (studentNumber.length() != 8)
 						studentNumber = "0" + studentNumber;
 				}
-				System.out.println(studentNumber);
 			}
+
 		} catch (SQLException se) {// SQLException문이 나올경우 catch
 			System.out.println("쿼리 error = [" + se + "]");
 		} catch (Exception e) {// Exception문이 나올경우 catch
@@ -292,7 +288,6 @@ public class StudentDAO {
 		sql.append("select st.no, sd_num, sd_name, sd_id, sd_passwd, st.s_num s_num, ");
 		sql.append("su.s_name as s_name, sd_birth, sd_phone, sd_address, sd_email, sd_date ");
 		sql.append("from student st inner join subject su on st.s_num = su.s_num ");
-		sql.append("order by no");
 
 		// equalsIgnoreCase 는 영문의 대소문자와 상관없이 일치하면 true, 밑의 값은 한글이지만 알아가고자 사용함
 		if (searchObject.equalsIgnoreCase("학생명"))
@@ -364,30 +359,33 @@ public class StudentDAO {
 	public boolean studentUpdate(HashMap<String, String> hm, String sd_num) {
 		StringBuffer sql = new StringBuffer();
 		sql.append("update student set ");
-		//수정 여부
+		// 수정 여부
 		boolean success = false;
-		
-		//StringBuffer 를 이용해 sql문 추가. 수정한 개수 만큼 while문이 돈다.
+
+		// StringBuffer 를 이용해 sql문 추가. 수정한 개수 만큼 while문이 돈다.
 		Set<String> keys = hm.keySet();
 		Iterator<String> itr = keys.iterator();
 		while (itr.hasNext()) {
-			String key = itr.next();//hm 의 key값
-			String value = hm.get(key);//hm 의 value 값
-				if (key.equals("sd_birth")) {//sd_birth 는 Date 타입 이므로 특별히 처리 해야함
-					String year, month, date;
-					if (value.substring(0, 1).equals("0"))// yymmdd의 yy를 2000년대 생과 1900년대생 나누기
-						year = "20" + value.substring(0, 2);
-					else
-						year = "19" + value.substring(0, 2);
-					month = value.substring(2, 4);//yymmdd -> mm
-					date = value.substring(4);//yymmdd -> dd
-					value = year + "-" + month + "-" + date;//yyyy-mm-dd
-				}
-				sql.append(key + " = '" + value + "' ");//<예> sd_id = 'SWAK'
-				if (itr.hasNext())//다음값이 있으면 , 출력
-					sql.append(", ");
+			String key = itr.next();// hm 의 key값
+			String value = hm.get(key);// hm 의 value 값
+
+			if (key.equals("sd_birth")) {// sd_birth 는 Date 타입 이므로 특별히 처리 해야함
+				String year, month, date;
+				if (value.substring(0, 1).equals("0"))// yymmdd의 yy를 2000년대 생과 1900년대생 나누기
+					year = "20" + value.substring(0, 2);
+				else
+					year = "19" + value.substring(0, 2);
+				month = value.substring(2, 4);// yymmdd -> mm
+				date = value.substring(4);// yymmdd -> dd
+				value = year + "-" + month + "-" + date;// yyyy-mm-dd
+			}
+
+			sql.append(key + " = '" + value + "' ");// <예> sd_id = 'SWAK'
+
+			if (itr.hasNext())// 다음값이 있으면 , 출력
+				sql.append(", ");
 		}
-		sql.append("where sd_num = " + sd_num);//마지막 where 조건
+		sql.append("where sd_num = " + sd_num);// 마지막 where 조건
 //		System.out.println(sql.toString());//쿼리문 잘 작성 되었는지 확인용
 		Connection con = null;
 		Statement stmt = null;

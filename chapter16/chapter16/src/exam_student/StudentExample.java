@@ -251,26 +251,23 @@ public class StudentExample {
 			e.printStackTrace();
 		}
 	}
-	//학생정보 수정 메소드. 수정하지 않을 값은 Enter 키로 skip 한다.
+
+	// 학생정보 수정 메소드. 수정하지 않을 값은 Enter 키로 skip 한다.
 	private static void updateData(StudentDAO dao) {
 		String sd_num = "";
-		
-		//HashMap에 <컬럼명, 값> 을 담아 dao.studentUpdate 메소드로 보낸다.
+
+		// HashMap에 <컬럼명, 값> 을 담아 dao.studentUpdate 메소드로 보낸다.
 		HashMap<String, String> hm = new HashMap<String, String>();
 		try {
 			System.out.print("수정할 학생");
 			sd_num = inputDataNo() + "";
-			
-			//입력하지 않으면 값이 "" 가 되기 때문에
+
+			// 입력하지 않으면 값이 "" 가 되기 때문에
 			System.out.println("수정하지 않을 정보는 [Enter]키로 넘겨 주세요.");
-			System.out.print("이름:");
-			hm.put("sd_name", sc.nextLine() + sc.nextLine());
-			System.out.print("id:");
-			hm.put("sd_id", sc.nextLine());
+
+			// 학번, 이름, id, 학과번호 수정 불가
 			System.out.print("password:");
-			hm.put("sd_passwd", sc.nextLine());
-			System.out.print("학과번호:");
-			hm.put("s_num", sc.nextLine());
+			hm.put("sd_passwd", sc.nextLine() + sc.nextLine());
 
 			System.out.print("생년월일(yymmdd):");
 			hm.put("sd_birth", sc.nextLine());
@@ -281,23 +278,24 @@ public class StudentExample {
 			hm.put("sd_address", sc.nextLine());
 			System.out.print("e-mail:");
 			hm.put("sd_email", sc.nextLine());
-			
-			//value = "" 인 값을 제거하기 위한 작업
-			//keyset으로 set에 key값 가져온다.
-			Set <String> keys = hm.keySet();
-			
-			//while(itr.hasnext()) 안에서 삭제를 하면 에러가 나기 때문에 for문을 돌리기 위해 key를 ArrayList로 잠시 옮겨줌
+
+			// value = "" 인 값을 제거하기 위한 작업
+			// keyset으로 set에 key값 가져온다.
+			Set<String> keys = hm.keySet();
+
+			// while(itr.hasnext()) 안에서 삭제를 하면 에러가 나기 때문에 for문을 돌리기 위해 key를 ArrayList로 잠시
+			// 옮겨줌
 			ArrayList<String> al = new ArrayList<String>();
 			Iterator<String> itr = keys.iterator();
-			while (itr.hasNext()) 
-				al.add(itr.next());//Set -> ArrayList
-			
-			//key 값이 저장 되어있는 ArrayList 사이즈 만큼 for문 돌림
-			for (int i = 0 ; i < al.size() ; i++) {
-				if (hm.get(al.get(i)).equals(""))//만약 value가 "" 이라면
-					hm.remove(al.get(i));//삭제
+			while (itr.hasNext())
+				al.add(itr.next());// Set -> ArrayList
+
+			// key 값이 저장 되어있는 ArrayList 사이즈 만큼 for문 돌림
+			for (int i = 0; i < al.size(); i++) {
+				if (hm.get(al.get(i)).equals(""))// 만약 value가 "" 이라면
+					hm.remove(al.get(i));// 삭제
 			}
-			//이제 hm 에는 value가 빈 값이 없다.
+			// 이제 hm 에는 value가 빈 값이 없다.
 
 			boolean result = dao.studentUpdate(hm, sd_num);
 			if (result)

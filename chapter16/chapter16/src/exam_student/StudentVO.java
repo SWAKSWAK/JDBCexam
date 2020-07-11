@@ -15,7 +15,7 @@ public class StudentVO {
 	private String sd_address;
 	private String sd_email;
 	private Date sd_date;
-	
+
 	public StudentVO() {
 	}
 
@@ -125,7 +125,6 @@ public class StudentVO {
 	public void setSd_date(Date sd_date) {
 		this.sd_date = sd_date;
 	}
-
 
 	public void setS_name(String s_name) {
 		this.s_name = s_name;
